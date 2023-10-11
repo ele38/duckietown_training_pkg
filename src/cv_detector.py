@@ -17,7 +17,7 @@ class Template(object):
 		#Suscribrirse a la camara
 		self.Sub_Cam = rospy.Subscriber("/duckiebot/camera_node/image/raw", Image, self.procesar_img)
         #Publicar imagen(es)
-		self.pub_img = rospy.Publisher("/duckiebot/detector", Image, queue_size = 1)
+		self.pub_img = rospy.Publisher("/duckiebot/distancia", String, queue_size = 1)
 		#self.pub_img = rospy.Publisher("mas", Image, queue_size = 1)
 
 
@@ -39,31 +39,59 @@ class Template(object):
 
 		#Definir rangos para la mascara
 
-		lower_limit = np.array([20,100,100])
-		upper_limit =np.array([40,255,255])
-
+		lower_limit_pato = np.array([20,100,100])
+		upper_limit_pato =np.array([40,255,255])
+		lower_limit_cosa = np.array([180,40,40])
+		upper_limit_cosa = np.array([200,80,80])
 		#Mascara
-		mask = cv2.inRange(image_out, lower_limit, upper_limit)
-		image_out = cv2.bitwise_and(image, image, mask=mask)
+		mask_pato = cv2.inRange(image_out, lower_limit_pato, upper_limit_pato)
+		image_out_pato = cv2.bitwise_and(image, image, mask=mask_pato)
+		mask_cosa = cv2.inRange(image_out, lower_limit_cosa, upper_limit_cosa)
+		image_out_cosa = cv2.bitwise_and(image,image,mask=mask_cosa)
 
 		# Operaciones morfologicas, normalmente se utiliza para "limpiar" la mascara
 		kernel = np.ones((2 , 2), np.uint8)
-		img_erode = cv2.erode(mask, kernel, iterations=2) #Erosion
-		img_dilate = cv2.dilate(img_erode, kernel, iterations=2) #Dilatar 
+		img_erode_pato = cv2.erode(mask_pato, kernel, iterations=2) #Erosion
+		img_dilate_pato = cv2.dilate(img_erode_pato, kernel, iterations=2) #Dilatar 
+		img_erode_cosa = cv2.erode(mask_cosa, kernel, iterations=2) #Erosion
+		img_dilate_cosa = cv2.dilate(img_erode_cosa, kernel, iterations=2) #Dilatar 
 
 		# Definir blobs
-		_,contours, hierarchy = cv2.findContours(img_dilate,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
-		for cnt in contours:
+		_,contours_pato, hierarchy_pato = cv2.findContours(img_dilate_pato, cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+		_,contours_cosa, hierarchy_cosa = cv2.findContours(img_dilate_cosa,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+		msg = "pato: "
+		for cnt in contours_pato:
 			AREA = cv2.contourArea(cnt)
 			if AREA>10: #Filtrar por tamano de blobs
 				x,y,w,h = cv2.boundingRect(cnt)
-				cv2.rectangle(image, (x,y), (x+w,y+h), (180,105,255), 5)
+				p = h #tamano en pixeles
+				dr = 25 #tamano real
+				f = 320 # distancia focal
+				Dr = dr*f/p #distancia
+				msg += str(Dr)
+				
+				#self.pub_img.publish(msg) 
+			else:
+				None
+		msg += "\n cosa: "
+		for cnt in contours_cosa:
+			AREA = cv2.contourArea(cnt)
+			if AREA>10: #Filtrar por tamano de blobs
+				x,y,w,h = cv2.boundingRect(cnt)
+				p = h #tamano en pixeles
+				dr = 25 #tamano real
+				f = 320 # distancia focal
+				Dr = dr*f/p #distancia
+				msg += str(Dr)
+				
+				#self.pub_img.publish(msg) 
 			else:
 				None
 
+		self.pub_img.publish(msg) 
 		# Publicar imagen final
-		msg = bridge.cv2_to_imgmsg(image, "bgr8")
-		self.pub_img.publish(msg)
+#		msg = bridge.cv2_to_imgmsg(image, "bgr8")
+#		self.pub_img.publish(msg)
 
 def main():
 	rospy.init_node('detection') #creacion y registro del nodo!

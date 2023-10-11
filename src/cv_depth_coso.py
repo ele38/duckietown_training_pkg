@@ -17,7 +17,7 @@ class Template(object):
 		#Suscribrirse a la camara
 		self.Sub_Cam = rospy.Subscriber("/duckiebot/camera_node/image/raw", Image, self.procesar_img)
         #Publicar imagen(es)
-		self.pub_img = rospy.Publisher("/duckiebot/detector", Image, queue_size = 1)
+		self.pub_img = rospy.Publisher("/duckiebot/distancia", String, queue_size = 1)
 		#self.pub_img = rospy.Publisher("mas", Image, queue_size = 1)
 
 
@@ -57,13 +57,19 @@ class Template(object):
 			AREA = cv2.contourArea(cnt)
 			if AREA>10: #Filtrar por tamano de blobs
 				x,y,w,h = cv2.boundingRect(cnt)
-				cv2.rectangle(image, (x,y), (x+w,y+h), (180,105,255), 5)
+				p = h #tamano en pixeles
+				dr = 25 #tamano real
+				f = 320 # distancia focal
+				Dr = dr*f/p #distancia
+				msg = str(Dr)
+				
+				self.pub_img.publish(msg) 
 			else:
 				None
 
 		# Publicar imagen final
-		msg = bridge.cv2_to_imgmsg(image, "bgr8")
-		self.pub_img.publish(msg)
+#		msg = bridge.cv2_to_imgmsg(image, "bgr8")
+#		self.pub_img.publish(msg)
 
 def main():
 	rospy.init_node('detection') #creacion y registro del nodo!
