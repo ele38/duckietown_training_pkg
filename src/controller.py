@@ -13,12 +13,14 @@ class Template(object):
         self.args = args
         #sucribir a joy
         self.sub = rospy.Subscriber("/duckiebot/possible_cmd/duckietown_msg" , Twist2DStamped, self.callback_joy)
-        self.sub2 = rospy.Subscriber("/duckiebot/distancia", Float32, self.callback_dist)
+        self.sub2 = rospy.Subscriber("/duckiebot/distancia", Int32, self.callback_dist)
 #publicar la intrucciones del control en possible_cmd
         self.publi = rospy.Publisher("/duckiebot/wheels_driver_node/car_cmd", Twist2DStamped, queue_size = 10)
 	self.cerca = False
     def callback_dist(self, dist):
-	if dist < 250:
+	print("somos gonzalo fans")
+	
+	if dist.data < 250:
 		print("cualquier wea -gonzalo")
 		self.cerca = True
 	else:
@@ -26,7 +28,7 @@ class Template(object):
     def callback_joy(self, joy):
 	temp = joy
 	if self.cerca:
-		temp.v = 0
+		temp.v = min(temp.v, 0) 
 	self.publi.publish(temp)
 
     def publicar(self, msg):

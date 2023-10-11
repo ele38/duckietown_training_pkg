@@ -18,7 +18,7 @@ class Template(object):
 		#Suscribrirse a la camara
 		self.Sub_Cam = rospy.Subscriber("/duckiebot/camera_node/image/raw", Image, self.procesar_img)
         #Publicar imagen(es)
-		self.pub_img = rospy.Publisher("/duckiebot/distancia", Float32, queue_size = 1)
+		self.pub_img = rospy.Publisher("/duckiebot/distancia", Int32, queue_size = 1)
 		#self.pub_img = rospy.Publisher("mas", Image, queue_size = 1)
 
 
